@@ -40,6 +40,12 @@ android {
         versionCode = properties["project.app.versionCode"].toString().toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        if (project.hasProperty("arm64Only")) {
+            ndk {
+                abiFilters.add("arm64-v8a")
+            }
+        }
     }
 
     buildTypes {
