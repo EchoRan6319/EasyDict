@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+easydict.jks
+.gitignore
+app/keystore.jks
+signing.properties
