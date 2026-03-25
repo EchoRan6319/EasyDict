@@ -1,8 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.materialthemebuilder)
+}
+
+val signingPropertiesFile = rootProject.file("signing.properties")
+if (signingPropertiesFile.exists()) {
+    val signingProps = Properties()
+    signingPropertiesFile.inputStream().use { signingProps.load(it) }
+    signingProps.forEach { key: Any, value: Any ->
+        project.ext[key as String] = value
+    }
 }
 
 materialThemeBuilder {
@@ -32,6 +43,15 @@ android {
     namespace = properties["project.app.packageName"].toString()
     compileSdk = properties["project.android.compileSdk"].toString().toInt()
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(project.ext["KEYSTORE_FILE"] as String? ?: "")
+            storePassword = project.ext["KEYSTORE_PASSWORD"] as String? ?: ""
+            keyAlias = project.ext["KEY_ALIAS"] as String? ?: ""
+            keyPassword = project.ext["KEY_PASSWORD"] as String? ?: ""
+        }
+    }
+
     defaultConfig {
         applicationId = properties["project.app.packageName"].toString()
         minSdk = properties["project.android.minSdk"].toString().toInt()
@@ -55,6 +75,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            val hasSigning = project.ext["KEYSTORE_FILE"] != null &&
+                project.ext["KEYSTORE_PASSWORD"] != null &&
+                project.ext["KEY_ALIAS"] != null &&
+                project.ext["KEY_PASSWORD"] != null
+            if (hasSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {

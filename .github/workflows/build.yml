@@ -20,14 +20,30 @@ jobs:
           java-version: 17
           distribution: temurin
 
+      - name: Create keystore
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > easydict.jks
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build arm64-v8a APK
+      - name: Build arm64-v8a Release APK
+        if: github.event_name != 'pull_request'
+        run: ./gradlew assembleRelease -Parm64Only=true \
+            -PKEYSTORE_FILE=easydict.jks \
+            -PKEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }} \
+            -PKEY_ALIAS=${{ secrets.KEY_ALIAS }} \
+            -PKEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+
+      - name: Build arm64-v8a Debug APK
+        if: github.event_name == 'pull_request'
         run: ./gradlew assembleDebug -Parm64Only=true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: arm64-v8a-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: ${{ github.event_name == 'pull_request' && 'arm64-v8a-debug-apk' || 'arm64-v8a-release-apk' }}
+          path: app/build/outputs/apk/${{ github.event_name == 'pull_request' && 'debug' || 'release' }}/*.apk
